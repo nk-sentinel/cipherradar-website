@@ -1,0 +1,85 @@
+/* CipherRadar brand theme for Starlight.
+   Palette from logo/: blue #3b82f6, deep navy #060e1f / #0d1f40, light slate #e2e8f0. */
+
+:root {
+	/* Accent (blue) — used for links, active nav, focus rings. */
+	--sl-color-accent-low: #14203a;
+	--sl-color-accent: #3b82f6;
+	--sl-color-accent-high: #bcd6ff;
+
+	/* Brand tokens reused by custom components below. */
+	--cr-navy-900: #060e1f;
+	--cr-navy-800: #0a1730;
+	--cr-navy-700: #0d1f40;
+	--cr-blue: #3b82f6;
+	--cr-blue-soft: #60a5fa;
+	--cr-slate: #e2e8f0;
+}
+
+/* Dark theme (default): deep-navy surfaces. */
+:root[data-theme='dark'] {
+	--sl-color-bg: #060e1f;
+	--sl-color-bg-nav: rgba(6, 14, 31, 0.85);
+	--sl-color-bg-sidebar: #0a1730;
+	--sl-color-bg-inline-code: #11203c;
+	--sl-color-hairline-light: #1c2c4a;
+	--sl-color-hairline: #16243e;
+	--sl-color-gray-7: #0a1730;
+	--sl-color-gray-6: #0d1f40;
+	--sl-color-text-accent: var(--cr-blue-soft);
+}
+
+/* Light theme: keep it crisp, deepen the accent for contrast. */
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d7e6ff;
+	--sl-color-accent: #1d4ed8;
+	--sl-color-accent-high: #0a225e;
+	--sl-color-text-accent: #1d4ed8;
+}
+
+/* Header: subtle radar-blue underline. */
+.header {
+	border-bottom: 1px solid var(--sl-color-hairline);
+	backdrop-filter: blur(8px);
+}
+
+/* Splash hero: navy gradient with a faint radar glow. */
+:root[data-theme='dark'] .hero {
+	background:
+		radial-gradient(60rem 30rem at 75% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
+		linear-gradient(180deg, #060e1f 0%, #0a1730 100%);
+	border-radius: 1rem;
+	padding: 1rem;
+}
+
+.hero h1 {
+	background: linear-gradient(90deg, var(--cr-slate), var(--cr-blue-soft));
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+/* Make the primary CTA button feel branded. */
+.hero .sl-link-button.primary {
+	background: var(--cr-blue);
+	border-color: var(--cr-blue);
+}
+.hero .sl-link-button.primary:hover {
+	background: var(--cr-blue-soft);
+	border-color: var(--cr-blue-soft);
+}
+
+/* Card grids on the landing / features pages: lift on hover. */
+.card {
+	transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover {
+	border-color: var(--cr-blue);
+	transform: translateY(-2px);
+}
+
+/* Logo sizing in the header. */
+.site-title img {
+	height: 1.75rem;
+	width: auto;
+}

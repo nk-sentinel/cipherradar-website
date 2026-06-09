@@ -1,0 +1,68 @@
+---
+title: CipherRadar
+description: Source-code-first Cryptography Bill of Materials (CBOM) platform — discover every cryptographic asset, map it to compliance frameworks, and track post-quantum readiness from one CLI.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  tagline: Find every cryptographic asset in your code. Map it to compliance. Track post-quantum readiness — from one CLI.
+  image:
+    file: ../../assets/cipherradar-logo.svg
+  actions:
+    - text: Get started
+      link: /guides/cli/overview/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/nk-sentinel/cipherradar
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is CipherRadar?
+
+CipherRadar scans source code, containers, and config files to produce a
+**CycloneDX 1.7 Cryptography Bill of Materials (CBOM)** — a structured inventory of every
+algorithm, protocol, certificate, and piece of key material in your software. It maps those
+findings to compliance frameworks and flags what's vulnerable to quantum attack.
+
+No build required. No source leaves your machine. One binary.
+
+<CardGrid stagger>
+	<Card title="Inventory everything" icon="magnifier">
+		12 languages, plus container images and config files (nginx, OpenSSL, Java security,
+		Kubernetes, Dockerfiles). Three detection passes: tree-sitter AST → OpenGrep taint → YARA-X.
+	</Card>
+	<Card title="Standard output" icon="document">
+		CycloneDX 1.7 CBOM — the open ECMA-424 standard. Also SARIF, PDF, SonarQube, and
+		terminal formats from a single scan.
+	</Card>
+	<Card title="Gate your pipeline" icon="approve-check">
+		YAML policy-as-code with a documented exit-code contract. Fail the build on weak crypto,
+		hardcoded keys, or quantum-vulnerable algorithms.
+	</Card>
+	<Card title="Quantum-ready" icon="rocket">
+		Every finding scored for post-quantum risk against NIST IR 8547 deadlines (2030 / 2035).
+		Know your migration blast radius today.
+	</Card>
+</CardGrid>
+
+## 60-second start
+
+```bash
+# Build the CLI
+cd cli && go build -o cradar ./cmd/cradar
+
+# Scaffold config, then scan
+cradar init
+cradar scan ./my-app -o cbom.json --validate
+
+# Gate a pipeline on policy
+cradar policy check cbom.json --policy policy.cradar.yml --fail-on high
+```
+
+Head to the [CLI Overview](/guides/cli/overview/) for installation and the full quick start,
+or jump to the [CBOM Output Schema Reference](/guides/cli/cbom-schema-reference/) to learn how
+to read the output.

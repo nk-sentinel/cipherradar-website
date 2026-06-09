@@ -1,0 +1,93 @@
+---
+title: Features
+description: What the cradar CLI does — detection, output, compliance, policy gating, and post-quantum readiness.
+sidebar:
+  order: 0
+editUrl: false
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+`cradar` is a single, source-code-first binary that turns a codebase into a complete,
+standards-based cryptography inventory. Here's what it covers.
+
+## Detection
+
+<CardGrid>
+	<Card title="12 languages" icon="seti:default">
+		Python, JavaScript/TypeScript, Java, Kotlin, Go, C/C++, C#, PHP, Ruby, Rust, and more —
+		parsed with tree-sitter, no build step required.
+	</Card>
+	<Card title="Three detection passes" icon="setting">
+		Pass 1 tree-sitter AST + constant propagation, Pass 2 OpenGrep taint rules, optional
+		Pass 3 YARA-X binary content scanning. `--fast` for Pass 1 only, `--deep` for all three.
+	</Card>
+	<Card title="Beyond source" icon="puzzle">
+		Scans OCI container images (layer extraction) and config files — nginx, Apache httpd,
+		`openssl.cnf`, `java.security`, Kubernetes manifests, and Dockerfiles.
+	</Card>
+	<Card title="Crypto misuse" icon="warning">
+		Flags weak ciphers, ECB mode, hardcoded keys and IVs, MD5/SHA-1 password hashing,
+		PKCS#1 v1.5 padding, low RSA key sizes, and more.
+	</Card>
+</CardGrid>
+
+## Output
+
+<CardGrid>
+	<Card title="CycloneDX 1.7 CBOM" icon="document">
+		The open ECMA-424 standard for cryptography bills of materials — algorithms, protocols,
+		certificates, and related crypto material with full `cryptoProperties`.
+	</Card>
+	<Card title="Five formats, one scan" icon="copy">
+		CycloneDX JSON, SARIF, PDF, SonarQube generic issues, and terminal text/table — written
+		together via repeatable `-o`, with the writer chosen from each file extension.
+	</Card>
+	<Card title="Readable by humans" icon="laptop">
+		A TTY-aware terminal summary by default, a row-per-finding table for scripting, and an
+		executive PDF for review boards.
+	</Card>
+	<Card title="Diff across releases" icon="random">
+		`cradar diff` compares two CBOMs to surface added, removed, and changed crypto assets
+		between versions.
+	</Card>
+</CardGrid>
+
+## Compliance & quantum readiness
+
+<CardGrid>
+	<Card title="Six frameworks" icon="approve-check">
+		Findings map to NIST, FIPS, PCI-DSS, NSA CNSA 2.0, ISO 27001, and the EU Cyber
+		Resilience Act.
+	</Card>
+	<Card title="Post-quantum scoring" icon="rocket">
+		Every algorithm is scored against NIST IR 8547 deadlines (deprecate 2030 / disallow 2035).
+		Quantum-vulnerable findings are tagged so you can plan migration.
+	</Card>
+</CardGrid>
+
+## Workflow & CI
+
+<CardGrid>
+	<Card title="Policy-as-code" icon="setting">
+		YAML policy files with `--fail-on <severity>` and a documented
+		[exit-code contract](/guides/cli/exit-codes/) for clean pipeline gating.
+	</Card>
+	<Card title="Baselines" icon="list-format">
+		`--update-baseline` acknowledges current findings so subsequent runs surface only what's
+		new — ideal for adopting cradar on an existing codebase.
+	</Card>
+	<Card title="Rule control" icon="filter">
+		Filter by category (`--only-inventory` / `--only-security`), disable noisy rules, and opt
+		into experimental rules — all per-scan.
+	</Card>
+	<Card title="Air-gapped ready" icon="seti:lock">
+		The `cradar-full` build bundles OpenGrep + YARA-X; lightweight users fetch them once with
+		`cradar install-tools` (SHA-256 verified). Shell completion for bash/zsh/fish/PowerShell.
+	</Card>
+</CardGrid>
+
+---
+
+Ready to try it? Start with the [CLI Overview](/guides/cli/overview/), or browse the full
+[Command Reference](/guides/cli/commands/).

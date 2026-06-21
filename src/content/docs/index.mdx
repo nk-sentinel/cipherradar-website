@@ -33,7 +33,8 @@ No build required. No source leaves your machine. One binary.
 <CardGrid>
 	<Card title="Inventory everything" icon="magnifier">
 		12 languages, plus container images and config files (nginx, OpenSSL, Java security,
-		Kubernetes, Dockerfiles). Three detection passes: tree-sitter AST → OpenGrep taint → YARA-X.
+		Kubernetes, Dockerfiles). Resolves libraries to exact versions and `purl`s, parses
+		certificates and keystores. Three passes: tree-sitter AST → OpenGrep taint → YARA-X.
 	</Card>
 	<Card title="Standard output" icon="document">
 		CycloneDX 1.7 CBOM — the open ECMA-424 standard. Also SARIF, PDF, SonarQube, and
@@ -52,8 +53,8 @@ No build required. No source leaves your machine. One binary.
 ## 60-second start
 
 ```bash
-# Build the CLI
-cd cli && go build -o cradar ./cmd/cradar
+# Download the latest release for your platform, then extract:
+tar xzf cradar_*_linux_amd64.tar.gz   # see the CLI Overview for all platforms
 
 # Scaffold config, then scan
 cradar init

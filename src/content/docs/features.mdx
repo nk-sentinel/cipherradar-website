@@ -28,7 +28,18 @@ standards-based cryptography inventory. Here's what it covers.
 	</Card>
 	<Card title="Crypto misuse" icon="warning">
 		Flags weak ciphers, ECB mode, hardcoded keys and IVs, MD5/SHA-1 password hashing,
-		PKCS#1 v1.5 padding, low RSA key sizes, and more.
+		PKCS#1 v1.5 padding, and low key sizes — including key size recovered from the JCA
+		`getInstance(…)` + `init(N)` idiom and the C# `KeySize` property.
+	</Card>
+	<Card title="Exact library + version" icon="seti:npm">
+		Resolves crypto libraries to a concrete package, version, and CycloneDX `purl` across
+		npm, PyPI, Maven/Gradle, Cargo, RubyGems, Go modules, and Dart/pub — read from your
+		manifests and lockfiles.
+	</Card>
+	<Card title="Certificates & keystores" icon="seti:lock">
+		Parses X.509 from PEM, DER, and PKCS#7, plus base64 certs in Kubernetes Secrets — with
+		KeyUsage, ExtendedKeyUsage, BasicConstraints, and SAN extensions. Inspects JKS and
+		PKCS#12 keystores and flags default/weak store passwords.
 	</Card>
 </CardGrid>
 
@@ -37,7 +48,8 @@ standards-based cryptography inventory. Here's what it covers.
 <CardGrid>
 	<Card title="CycloneDX 1.7 CBOM" icon="document">
 		The open ECMA-424 standard for cryptography bills of materials — algorithms, protocols,
-		certificates, and related crypto material with full `cryptoProperties`.
+		certificates, and related crypto material with full `cryptoProperties`, library `purl`s,
+		and a certificate dependency graph. Schema-valid by construction (`--validate`).
 	</Card>
 	<Card title="Five formats, one scan" icon="copy">
 		CycloneDX JSON, SARIF, PDF, SonarQube generic issues, and terminal text/table — written
@@ -62,7 +74,12 @@ standards-based cryptography inventory. Here's what it covers.
 	</Card>
 	<Card title="Post-quantum scoring" icon="rocket">
 		Every algorithm is scored against NIST IR 8547 deadlines (deprecate 2030 / disallow 2035).
-		Quantum-vulnerable findings are tagged so you can plan migration.
+		Quantum-vulnerable findings are tagged with their NIST security level.
+	</Card>
+	<Card title="Migration guidance" icon="right-arrow">
+		Each vulnerable finding carries a harvest-now-decrypt-later–aware priority, a
+		recommendation, and a structured replacement target (e.g. RSA → ML-KEM, ECDSA → ML-DSA)
+		exported as CBOM properties for migration pipelines.
 	</Card>
 </CardGrid>
 

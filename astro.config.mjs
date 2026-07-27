@@ -2,9 +2,10 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-// Public site is served at the apex of cradar.shadow-lab.org (no base path).
+// Public site is served at the apex of docs.cipherradar.com (no base path).
+// The legacy cradar.shadow-lab.org host 301-redirects here (see ~/docker/cradar-docs/Caddyfile).
 export default defineConfig({
-	site: 'https://cradar.shadow-lab.org',
+	site: 'https://docs.cipherradar.com',
 	integrations: [
 		starlight({
 			title: 'CipherRadar',

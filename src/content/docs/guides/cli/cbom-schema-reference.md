@@ -58,16 +58,62 @@ manifest/lockfile, `cradar` emits standard CycloneDX component identity fields:
 | Field | Example | Notes |
 |---|---|---|
 | `name` | `node-forge` | Upgraded to the concrete package name when resolved. |
-| `version` | `1.3.1` | From the lockfile (npm `package-lock.json`, Python `poetry.lock`/`Pipfile.lock`/pinned `requirements.txt`, Maven `pom.xml`/`gradle.lockfile`). |
+| `version` | `1.3.1` | From a manifest or lockfile (see manifest sources below). |
 | `group` | `org.bouncycastle` | Maven groupId only. |
 | `purl` | `pkg:npm/node-forge@1.3.1` | Package URL; version-less (`pkg:npm/node-forge`) when the package is unambiguous but no manifest pin was found. |
 
 The raw detection hint is always available as a `library` property in
 `properties[]`, even when no concrete package/version could be resolved.
-Supported ecosystems today: **npm, PyPI, Maven/Gradle**. Findings in other
-ecosystems surface the library name but no purl. `group`/`version`/`purl` may
-also appear on a `cryptographic-asset` component when its detection carried a
-library hint (e.g. PHP mcrypt); its `cryptoProperties` are unaffected.
+Supported enrichment ecosystems today: **npm, PyPI, Maven/Gradle, Cargo,
+RubyGems, Go modules, Dart/pub**. Composer (PHP) and NuGet (C#) libraries are
+detected but do not yet receive `purl`/`version` enrichment. `group`/`version`/
+`purl` may also appear on a `cryptographic-asset` component when its detection
+carried a library hint (e.g. PHP mcrypt); its `cryptoProperties` are unaffected.
+
+#### Manifest sources (enrichment pass)
+
+`cli/internal/deps` walks the scan root and indexes:
+
+| Ecosystem | Files parsed | Version notes |
+|---|---|---|
+| npm | `package-lock.json`, `package.json` | Lockfile supplies concrete versions; `package.json` alone only pins exact versions (ranges like `^1.2.3` stay unresolved). |
+| PyPI | `requirements.txt`, `poetry.lock`, `Pipfile.lock` | Pinned specs only from `requirements.txt`; lockfiles preferred. |
+| Maven | `pom.xml` | Direct `<dependencies>` plus `<dependencyManagement>` fallback in the same POM; `${property}` resolved from local `<properties>`. |
+| Gradle | `gradle.lockfile`, `build.gradle(.kts)`, `gradle/libs.versions.toml` | Literal `group:artifact:version` strings and `libs.<alias>` catalog aliases; lockfile wins over catalog when both exist. |
+| Cargo | `Cargo.lock` | |
+| RubyGems | `Gemfile.lock` | |
+| Go | `go.mod` | |
+| Dart/pub | `pubspec.lock` | |
+
+Pass-3 (YARA-X binary) library findings carry their own version from the binary
+and **skip** manifest enrichment to avoid cross-ecosystem purl mismatches.
+
+### 2.1 Monitored crypto libraries (Pass-2 inventory rules)
+
+Pass-2 OpenGrep rules with `cbom-asset-type: library` detect cryptographic
+**library imports** (supply-chain inventory). Algorithm *usage* inside a library
+API is a separate `cryptographic-asset` finding from Pass 1 or other Pass-2
+rules.
+
+| Language | Libraries monitored (representative) |
+|---|---|
+| **Java / Kotlin** | Bouncy Castle, JCA/JCE/JSSE, Spring Security Crypto, JJWT, Nimbus JOSE+JWT, Jasypt, Commons Codec, Google Tink, jBCrypt, argon2-jvm |
+| **Python** | pyca/cryptography, hashlib, hmac, ssl, PyCryptodome, PyNaCl, PyCrypto (legacy), passlib, PyJWT, python-jose, authlib, bcrypt, argon2-cffi |
+| **JavaScript / TypeScript** | Node.js `crypto`, node-forge, jsonwebtoken, bcrypt, argon2, crypto-js, Web Crypto API, jose, @noble/hashes, @noble/curves, @noble/ciphers, libsodium-wrappers, sodium-native |
+| **Go** | stdlib `crypto/*`, `golang.org/x/crypto/*` |
+| **Rust** | ring, rustls, openssl, aws-lc-rs, p256, ed25519-dalek, x25519-dalek, chacha20poly1305 |
+| **C / C++** | OpenSSL headers, libsodium |
+| **C#** | `System.Security.Cryptography`, BouncyCastle.NET, Microsoft.IdentityModel.Tokens, jose-jwt |
+| **Ruby** | openssl, bcrypt, digest (stdlib), jwt, rbnacl |
+| **PHP** | mcrypt (legacy), firebase/php-jwt, defuse/php-encryption |
+| **Swift** | CryptoKit, CommonCrypto, Swift Crypto |
+| **Dart** | `package:crypto`, PointyCastle, `package:cryptography` |
+
+Stdlib/platform APIs (JCA, Node `crypto`, Go `crypto/*`, Web Crypto) emit
+`type: library` findings with **no purl** by design.
+
+Rule source of truth: `scanner/rules/<lang>.yml` (`cbom-*-crypto-library-import`
+and related inventory rules). Enrichment tokens: `cli/internal/deps/library_map.go`.
 
 ---
 
@@ -188,21 +234,57 @@ So `TLS 1.2` → `{ name: "TLS", protocolProperties: { type: "tls", version: "1.
 > covered: PEM (in source), DER (`.der`/`.cer`/`.crt`), PKCS#7 bundles
 > (`.p7b`/`.p7c`), and certificates inside keystores (below).
 
-### Keystores (JKS / PKCS#12)
+**Extended identity/context metadata (`cradar:cert:*`).** CycloneDX 1.7
+`certificateProperties` is a fixed schema, so the extra fields cradar extracts are
+surfaced as free-form **component `properties`** (validation-safe) — i.e. on the
+component itself (`component.properties[]`), not inside `certificateProperties`. Each
+is emitted only when present:
 
-Keystore files (`.jks`, `.keystore`, `.p12`, `.pfx`, `.truststore`) are inspected:
+| Property (`cradar:cert:…`) | Description |
+|---|---|
+| `serialNumber` | Certificate serial number. |
+| `sha256Fingerprint` | SHA-256 fingerprint of the DER certificate. |
+| `subjectKeyIdentifier` | Subject Key Identifier (SKI) — used for chain linking. |
+| `authorityKeyIdentifier` | Authority Key Identifier (AKI) — links to the issuer's SKI. |
+| `publicKeyCurve` | Named curve for EC keys (e.g. `P-256`). |
+| `publicKeyExponent` | RSA public exponent (e.g. `65537`). |
+| `signatureHash` | Hash used in the certificate signature (e.g. `SHA-256`). |
+| `selfSigned` | `true` when subject == issuer (self-signed). |
+| `version` | X.509 version (e.g. `3`). |
+| `validityDays` | Total validity window, in days. |
+| `ocspServer` | OCSP responder URL (from Authority Information Access). |
+| `caIssuerUrl` | CA Issuers URL (from Authority Information Access). |
+| `crlDistributionPoint` | CRL distribution point URL. |
+| `policyOid` | Certificate policy OID(s). |
+
+> Material that routes to the cert parser but fails to parse is surfaced as a
+> low-severity `cbom-cert-unparsed` finding rather than silently dropped.
+
+### Keystores (JKS / PKCS#12 / JCEKS / BKS / BCFKS / …)
+
+Keystore files are inspected — coverage by format:
+
+| Format | Extensions | Handling |
+|---|---|---|
+| JKS, PKCS#12 | `.jks` `.keystore` `.truststore` `.p12` `.pfx` `.pkcs12` `.pk12` | certificates enumerated (password-aware) |
+| JCEKS | `.jceks` | certificates enumerated (pure-Go; cert entries are plaintext — no password needed) |
+| BKS | `.bks` | certificates enumerated (pure-Go; plaintext cert entries) |
+| BCFKS, UBER | `.bcfks` `.ubr` `.uber` | **presence-only** — whole store encrypted (needs password + BouncyCastle) |
+| macOS Keychain, Mozilla NSS | `.keychain` `.keychain-db`, `cert9.db` / `key4.db` / … | **presence-only** — non-Java formats (NSS matched by exact filename) |
 
 - A `cbom-keystore-present` finding is **always** emitted (path-stamped), noting
-  whether the store is locked or contains private-key material.
+  whether the store is locked/unsupported or contains private-key material — so
+  even an unparsed store is captured, never invisible.
 - Embedded certificates are enumerated and modeled exactly like file
   certificates (the linked graph above).
-- `cradar` tries a curated set of well-known/default passwords (JDK `changeit`,
-  `android`, `notasecret`, WebLogic demo stores, common weak values, plus the
-  filename) and any list passed via `--keystore-wordlist <file>`. If one opens
-  the store, a `cbom-keystore-weak-password` **security** finding (HIGH) is
-  emitted in addition to the inventory. `cradar` never downloads wordlists.
-- A store that no candidate opens is reported as present-but-locked, with no
-  cert enumeration.
+- For password-protected stores, `cradar` tries a curated set of well-known /
+  default passwords (JDK `changeit`, `android`, `notasecret`, WebLogic demo
+  stores, common weak values, plus the filename); passwords **harvested** from
+  the project's own config keys and keystore-load API calls (coverage-only —
+  never logged or reported); and any list passed via `--keystore-wordlist
+  <file>`. If a default/weak password opens the store, a
+  `cbom-keystore-weak-password` **security** finding (HIGH) is emitted. `cradar`
+  never downloads wordlists.
 
 ### 4.4 `related-crypto-material` → `relatedCryptoMaterialProperties`
 

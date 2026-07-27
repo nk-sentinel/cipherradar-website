@@ -74,6 +74,7 @@ alone gives you the inventory.
 | [`commands.md`](/guides/cli/commands/)                 | Every subcommand, every flag, with examples                            |
 | [`output-formats.md`](/guides/cli/output-formats/)     | The five output formats, extension dispatch, TTY-aware stdout defaults |
 | [`cbom-schema-reference.md`](/guides/cli/cbom-schema-reference/) | `component.type` / `assetType` values, per-field enums, which fields need action |
+| [`algorithm-keysize-patterns.md`](https://github.com/nk-sentinel/cipherradar/blob/main/docs/algorithm-keysize-patterns.md) | How key sizes are declared per language/API, CipherRadar coverage, and detection gaps |
 | [`configuration.md`](/guides/cli/configuration/)       | `.cradar.yml` and `policy.cradar.yml` schemas with annotated examples  |
 | [`exit-codes.md`](/guides/cli/exit-codes/)             | Exit-code contract for CI pipelines                                    |
 | [`workflows.md`](/guides/cli/workflows/)               | Common recipes — CI gate, baseline, container scan, push, hooks, etc.  |

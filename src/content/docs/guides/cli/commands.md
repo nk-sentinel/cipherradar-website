@@ -59,7 +59,9 @@ cradar scan --container <image-ref> [flags]
 | `--passes string` | `1,2` | Comma-separated list of passes to run. `1` = AST inventory; `2` = OpenGrep taint; `3` = YARA-X binary content. |
 | `--deep` | `false` | Alias for `--passes 1,2,3` (full pipeline including binary scanning). |
 | `--fast` | `false` | Pass 1 only; skip files larger than 100 KB. Designed for the pre-commit hook. |
-| `--rules-dir string` | `(embedded)` | External directory of OpenGrep YAML rules to use instead of the embedded set. Also reads `CRADAR_RULES_DIR`. |
+| `--rules-dir string` | `(embedded)` | External directory of OpenGrep YAML rules (Pass 2) to use instead of the embedded set. Also reads `CRADAR_RULES_DIR`. |
+| `--yara-rules-dir string` | `(embedded)` | External directory of YARA-X `.yar` rules (Pass 3) to use instead of the embedded set. Also reads `CRADAR_YARA_RULES_DIR`. |
+| `--ast-rules-dir string` | `(embedded)` | External directory of Pass-1 AST detection tables (`<lang>.yml`). Replaces the embedded tables **per language** — a dir replaces only the languages whose file it contains; others keep the embedded tables. Also reads `CRADAR_AST_RULES_DIR`. A dir with no recognized `<lang>.yml` (or a malformed one) exits 4. |
 | `--severity string` | `low` | Minimum severity level to report. |
 | `--branch string` | | Git branch to scan (for git URL inputs). |
 
@@ -72,8 +74,11 @@ part of the default set, the missing tool degrades to a warning and the pass is 
 Pass 3 runs the bundled YARA-X engine (`yr`) over compiled artifacts to detect cryptographic
 material that isn't visible in source: embedded certificates, hard-coded private keys, library
 fingerprints (OpenSSL / libsodium / BoringSSL / mbedTLS), and algorithm-defining byte tables
-(AES S-box, MD5/SHA initial state). The starter ruleset ships embedded with the CLI; override
-with `CRADAR_YARA_RULES_DIR` if you need to extend or replace the default set.
+(AES S-box, MD5/SHA initial state). The starter ruleset ships embedded with the CLI; replace it
+with your own via `--yara-rules-dir <dir>` (or the `CRADAR_YARA_RULES_DIR` env var) — the flag
+wins over the env var, and both replace the embedded set entirely, mirroring `--rules-dir` for
+Pass 2. When the flag is set explicitly and the directory contains no `.yar`/`.yara` files,
+`cradar` exits 4 rather than silently scanning with no rules.
 
 Pass 3 is **opt-in** — it's not in the default `--passes 1,2` set so binary-heavy repos don't
 pay the cost on every scan. Enable it via `--passes 3` (Pass 3 only), `--passes 1,2,3` (full
@@ -92,6 +97,8 @@ when both are enabled; the two engines produce complementary findings (de-duplic
 | `--category strings` | | Limit findings to categories. Repeatable. Values: `inventory`, `security`. |
 | `--only-inventory` | `false` | Shortcut for `--category inventory`. |
 | `--only-security` | `false` | Shortcut for `--category security`. |
+| `--asset-type strings` | | Keep only findings of these CBOM asset types. Repeatable. Values: `algorithm`, `protocol`, `certificate`, `related-crypto-material`, `library`. |
+| `--exclude-type strings` | | Drop findings of these CBOM asset types. Repeatable. Applied after `--asset-type`. |
 | `--rules strings` | | Explicit allowlist of rule IDs; overrides the default set. |
 | `--disable-rule strings` | | Rule IDs to exclude. Repeatable. Trumps every other include flag. |
 | `--include-rule strings` | | Per-rule opt-in; bypasses maturity and noise gates. |
@@ -122,6 +129,18 @@ By default `cradar` skips non-source paths so it never re-ingests its own output
 vendored/build noise. A project-root `.cradarignore` (gitignore syntax) adds scan-specific
 exclusions. Config files, certificate/key material, and binaries are never default-ignored.
 
+### Coverage / resource limits
+
+These bound how much a single scan reads so a huge file, a bloated image, or a
+decompression-bomb archive can't exhaust memory or disk. All are optional — the
+defaults are safe.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--max-file-size string` | `(no limit)` | Skip any file larger than this before it is read, e.g. `50MB` / `1GB` / a raw byte count. Bounds per-file memory on large inputs; skipped files are recorded in the scan errors for auditability. |
+| `--max-image-size string` | `2GB` | Cap the **total** bytes extracted from a `--container` image. Once the budget is exceeded, remaining layers are skipped and a `extraction budget … exceeded` note is recorded. Guards against oversized/bloated images. |
+| `--archive-max-depth int` | `4` | Maximum nested-archive recursion depth for `.jar`/`.war`/`.ear`/`.zip` (jar-in-jar). `-1` uses the built-in default (4); `0` disables recursion into nested archives (the top-level archive is still scanned). When recursion is capped, the archive is flagged `cbom-archive-partial`. |
+
 ### Keystore inspection
 
 | Flag | Default | Description |
@@ -149,7 +168,7 @@ NSS** databases (`cert9.db`/`key4.db`) — are captured presence-only. See
 
 | Flag | Default | Description |
 |---|---|---|
-| `--container string` | | Scan a container image. Accepts a registry reference or a local `.tar` path. Mutually exclusive with the positional path. |
+| `--container string` | | Scan a container image. Accepts a registry reference or a local `.tar` path. Mutually exclusive with the positional path. Image layers are materialized to a temp directory and scanned through the full pipeline — Pass 1 + Pass 3 via the walker, Pass 2 via OpenGrep — so `--deep` / `--passes 2,3` deepen an image scan just like a directory scan. Compiled binaries in layers are scanned (Pass 3), nested archives are unpacked recursively (bounded — see `--archive-max-depth`), and image config/history/labels are ingested as a source (secrets baked into `ENV`, cipher references in build history). Findings carry layer provenance. Bound total extraction with `--max-image-size`. |
 
 ### Baseline suppression
 
